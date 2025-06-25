@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matatu Booking Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+<nav class="bg-blue-600 text-white p-4">
+    <div class="container mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold">Matatu Booking System</h1>
+        <div>
+            {% if user.is_authenticated %}
+                <span class="mr-4">Welcome, {{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600">Logout</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="bg-white text-blue-600 px-3 py-1 rounded mr-2 hover:underline">Login</a>
+                <a href="{% url 'signup' %}" class="bg-white text-blue-600 px-3 py-1 rounded hover:underline">Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<div class="container mx-auto p-6">
+    <h2 class="text-2xl font-semibold mb-4 text-center">Available Trips</h2>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white rounded-lg shadow">
+            <thead class="bg-gray-200 text-gray-600">
+                <tr>
+                    <th class="py-2 px-4 text-left">Route</th>
+                    <th class="py-2 px-4 text-left">Matatu</th>
+                    <th class="py-2 px-4 text-left">Date</th>
+                    <th class="py-2 px-4 text-left">Departure</th>
+                    <th class="py-2 px-4 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trip in trips %}
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="py-2 px-4">{{ trip.matatu.route }}</td>
+                    <td class="py-2 px-4">{{ trip.matatu.plate_number }}</td>
+                    <td class="py-2 px-4">{{ trip.date }}</td>
+                    <td class="py-2 px-4">{{ trip.departure_time }}</td>
+                    <td class="py-2 px-4">
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'book_trip' trip.id %}" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                                Book
+                            </a>
+                        {% else %}
+                            <a href="{% url 'login' %}" class="text-blue-500 underline">Login to Book</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-gray-500">No trips available at the moment.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>
