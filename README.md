@@ -82,7 +82,7 @@ Matatu/
 
 ### 🔧 Setup & Run Locally
 
-```bash
+
 # 1. Clone the repo
 git clone https://github.com/ayagah/Matatu.git
 cd Matatu
@@ -100,5 +100,5 @@ python manage.py migrate
 # 5. Create superuser for admin access
 python manage.py createsuperuser
 
-# 6. Start the server
+6. Start the server
 python manage.py runserver
