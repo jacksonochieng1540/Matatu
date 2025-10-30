@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Home - MatatuBook | Book Your Matatu Ride{% endblock %}
+
+{% block content %}
+<!-- Hero Section with Search -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <h1 class="display-4 fw-bold mb-3">Book Your Matatu Ride in Minutes</h1>
+                <p class="lead mb-4">Fast, reliable, and convenient matatu booking across Kenya. Compare prices, choose your seat, and travel with confidence.</p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'search_trips' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-search"></i> Search Trips
+                    </a>
+                    <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-person-plus"></i> Sign Up Free
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <!-- Quick Search Form -->
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-4">
+                        <h4 class="card-title mb-4"><i class="bi bi-ticket-perforated"></i> Find Your Trip</h4>
+                        <form method="GET" action="{% url 'search_trips' %}">
+                            <div class="mb-3">
+                                <label class="form-label">From</label>
+                                <select name="origin" class="form-select" required>
+                                    <option value="">Select origin...</option>
+                                    <!-- Options will be populated from Location model -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">To</label>
+                                <select name="destination" class="form-select" required>
+                                    <option value="">Select destination...</option>
+                                    <!-- Options will be populated from Location model -->
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label">Travel Date</label>
+                                    <input type="date" name="travel_date" class="form-control" required 
+                                           min="{{ today|date:'Y-m-d' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Passengers</label>
+                                    <input type="number" name="passengers" class="form-control" 
+                                           value="1" min="1" max="6" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                <i class="bi bi-search"></i> Search Available Trips
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold mb-3">Why Choose MatatuBook?</h2>
+            <p class="text-muted">Experience the best way to book your matatu rides</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="feature-icon">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                    <h5 class="fw-bold">Instant Booking</h5>
+                    <p class="text-muted">Book your seat in seconds with our easy-to-use platform</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="feature-icon">
+                        <i class="bi bi-phone"></i>
+                    </div>
+                    <h5 class="fw-bold">M-Pesa Payment</h5>
+                    <p class="text-muted">Pay securely with M-Pesa and other convenient methods</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="feature-icon">
+                        <i class="bi bi-qr-code"></i>
+                    </div>
+                    <h5 class="fw-bold">Digital Tickets</h5>
+                    <p class="text-muted">Get instant QR code tickets sent to your phone</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="feature-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h5 class="fw-bold">Safe & Secure</h5>
+                    <p class="text-muted">Travel with verified SACCOs and insured vehicles</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Popular Routes Section -->
+{% if popular_routes %}
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold">Popular Routes</h2>
+            <a href="{% url 'search_trips' %}" class="btn btn-outline-primary">View All Routes</a>
+        </div>
+        <div class="row g-4">
+            {% for route in popular_routes %}
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="card-title mb-1">{{ route.origin.name }}</h5>
+                                <i class="bi bi-arrow-down text-primary"></i>
+                                <h5 class="card-title mt-1">{{ route.destination.name }}</h5>
+                            </div>
+                            <span class="badge bg-primary badge-custom">KES {{ route.base_fare }}</span>
+                        </div>
+                        <div class="d-flex gap-3 text-muted small mb-3">
+                            <span><i class="bi bi-clock"></i> {{ route.estimated_duration }} mins</span>
+                            <span><i class="bi bi-signpost"></i> {{ route.distance }} km</span>
+                        </div>
+                        <a href="{% url 'search_trips' %}?origin={{ route.origin.id }}&destination={{ route.destination.id }}" 
+                           class="btn btn-outline-primary w-100">
+                            <i class="bi bi-search"></i> Find Trips
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- How It Works Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold mb-3">How It Works</h2>
+            <p class="text-muted">Book your matatu ride in three simple steps</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 60px; height: 60px; font-size: 24px; font-weight: bold;">
+                            1
+                        </div>
+                        <h5 class="fw-bold mb-3">Search & Select</h5>
+                        <p class="text-muted">Enter your origin, destination, and travel date. Browse available trips and select the one that suits you best.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 60px; height: 60px; font-size: 24px; font-weight: bold;">
+                            2
+                        </div>
+                        <h5 class="fw-bold mb-3">Choose Seat & Pay</h5>
+                        <p class="text-muted">Select your preferred seat on the matatu and complete payment securely using M-Pesa or card.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 60px; height: 60px; font-size: 24px; font-weight: bold;">
+                            3
+                        </div>
+                        <h5 class="fw-bold mb-3">Get Ticket & Travel</h5>
+                        <p class="text-muted">Receive your digital ticket with QR code instantly. Show it at the terminal and enjoy your journey!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Reviews Section -->
+{% if recent_reviews %}
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold mb-3">What Our Customers Say</h2>
+            <p class="text-muted">Real reviews from verified travelers</p>
+        </div>
+        <div class="row g-4">
+            {% for review in recent_reviews %}
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                                 style="width: 50px; height: 50px; font-size: 20px;">
+                                {{ review.customer.first_name.0 }}{{ review.customer.last_name.0 }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ review.customer.get_full_name }}</h6>
+                                <div class="rating-stars">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= review.overall_rating %}
+                                        <i class="bi bi-star-fill"></i>
+                                        {% else %}
+                                        <i class="bi bi-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-2">{{ review.comment|truncatewords:20 }}</p>
+                        <small class="text-muted">
+                            <i class="bi bi-bus-front"></i> {{ review.sacco.name }} • 
+                            {{ review.created_at|naturaltime }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- CTA Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="fw-bold mb-3">Ready to Book Your Next Trip?</h2>
+                <p class="lead mb-0">Join thousands of satisfied travelers using MatatuBook</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <a href="{% url 'search_trips' %}" class="btn btn-light btn-lg">
+                    <i class="bi bi-search"></i> Search Trips Now
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row text-center g-4">
+            <div class="col-md-3">
+                <h2 class="fw-bold text-primary display-4">500+</h2>
+                <p class="text-muted">Active SACCOs</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="fw-bold text-primary display-4">50K+</h2>
+                <p class="text-muted">Happy Travelers</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="fw-bold text-primary display-4">200+</h2>
+                <p class="text-muted">Routes Covered</p>
+            </div>
+            <div class="col-md-3">
+                <h2 class="fw-bold text-primary display-4">24/7</h2>
+                <p class="text-muted">Customer Support</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set minimum date to today for date input
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.querySelector('input[name="travel_date"]');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.setAttribute('min', today);
+            dateInput.value = today;
+        }
+    });
+</script>
+{% endblock %}
