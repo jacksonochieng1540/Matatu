@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def release_expired_bookings():
-    """Release seats from expired pending bookings"""
     try:
         now = timezone.now()
         expired_bookings = Booking.objects.filter(
@@ -23,21 +22,20 @@ def release_expired_bookings():
         )
         
         for booking in expired_bookings:
-            # Cancel booking
             booking.status = 'cancelled'
             booking.cancelled_at = now
             booking.cancellation_reason = 'Payment timeout'
             booking.save()
             
-            # Release seats
+            
             booking.seat_bookings.update(status='available')
             
-            # Update trip available seats
+           
             trip = booking.trip
             trip.available_seats += booking.number_of_seats
             trip.save()
             
-            # Notify customer
+            
             message = f"Your booking {booking.booking_reference} has expired. Please book again."
             send_sms(booking.passenger_phone, message)
         
@@ -51,7 +49,6 @@ def release_expired_bookings():
 
 @shared_task
 def send_trip_reminders():
-    """Send trip reminders 24 hours before departure"""
     try:
         tomorrow = timezone.now().date() + timedelta(days=1)
         
@@ -73,7 +70,6 @@ def send_trip_reminders():
 
 @shared_task
 def check_pending_payments():
-    """Check status of pending M-Pesa payments"""
     try:
         pending_payments = Payment.objects.filter(
             status='processing',
@@ -83,12 +79,11 @@ def check_pending_payments():
         for payment in pending_payments:
             result = query_mpesa_transaction(payment.checkout_request_id)
             if result and result.get('ResultCode') == '0':
-                # Payment successful
                 payment.status = 'completed'
                 payment.paid_at = timezone.now()
                 payment.save()
                 
-                # Update booking
+                
                 booking = payment.booking
                 booking.status = 'confirmed'
                 booking.save()
@@ -104,7 +99,6 @@ def check_pending_payments():
 
 @shared_task
 def update_sacco_ratings():
-    """Update SACCO ratings based on reviews"""
     try:
         saccos = SACCO.objects.all()
         
@@ -127,7 +121,6 @@ def update_sacco_ratings():
 
 @shared_task
 def update_driver_ratings():
-    """Update driver ratings based on reviews"""
     try:
         drivers = Driver.objects.all()
         
@@ -149,11 +142,10 @@ def update_driver_ratings():
 
 @shared_task
 def mark_completed_trips():
-    """Mark trips as completed after arrival time"""
     try:
         now = timezone.now()
         
-        # Find trips that should be completed
+        
         trips = Trip.objects.filter(
             status='in_transit',
             departure_date__lt=now.date()
@@ -164,7 +156,7 @@ def mark_completed_trips():
             trip.actual_arrival = now
             trip.save()
             
-            # Update related bookings
+           
             trip.bookings.filter(status='checked_in').update(status='completed')
         
         logger.info(f"Marked {trips.count()} trips as completed")
@@ -177,12 +169,10 @@ def mark_completed_trips():
 
 @shared_task
 def send_no_show_notifications():
-    """Mark bookings as no-show if customer didn't check in"""
     try:
         now = timezone.now()
         cutoff_time = now - timedelta(hours=1)
         
-        # Find bookings where trip departed over 1 hour ago but not checked in
         bookings = Booking.objects.filter(
             status='confirmed',
             trip__status__in=['in_transit', 'completed'],
@@ -194,7 +184,7 @@ def send_no_show_notifications():
             booking.status = 'no_show'
             booking.save()
             
-            # Could implement penalty or refund policy here
+           
         
         logger.info(f"Marked {bookings.count()} bookings as no-show")
         return f"Marked {bookings.count()} as no-show"
@@ -206,12 +196,10 @@ def send_no_show_notifications():
 
 @shared_task
 def generate_daily_reports():
-    """Generate daily reports for SACCOs"""
     try:
         yesterday = timezone.now().date() - timedelta(days=1)
         
         for sacco in SACCO.objects.filter(is_active=True):
-            # Calculate stats
             trips = Trip.objects.filter(sacco=sacco, departure_date=yesterday)
             bookings = Booking.objects.filter(
                 trip__sacco=sacco,
@@ -223,7 +211,7 @@ def generate_daily_reports():
             total_bookings = bookings.count()
             total_passengers = sum(b.number_of_seats for b in bookings)
             
-            # Send report via email to SACCO admin
+            
             context = {
                 'sacco': sacco,
                 'date': yesterday,
@@ -250,7 +238,6 @@ def generate_daily_reports():
 
 @shared_task
 def cleanup_old_notifications():
-    """Delete old read notifications"""
     try:
         cutoff_date = timezone.now() - timedelta(days=30)
         deleted = Notification.objects.filter(
@@ -268,11 +255,10 @@ def cleanup_old_notifications():
 
 @shared_task
 def check_license_expiries():
-    """Check for expiring licenses and send notifications"""
     try:
         warning_date = timezone.now().date() + timedelta(days=30)
         
-        # Check driver licenses
+       
         drivers = Driver.objects.filter(
             license_expiry__lte=warning_date,
             license_expiry__gte=timezone.now().date()
@@ -282,7 +268,7 @@ def check_license_expiries():
             message = f"Your license expires on {driver.license_expiry}. Please renew it soon."
             send_sms(driver.user.phone_number, message)
         
-        # Check vehicle insurance
+      
         vehicles = Vehicle.objects.filter(
             insurance_expiry__lte=warning_date,
             insurance_expiry__gte=timezone.now().date()

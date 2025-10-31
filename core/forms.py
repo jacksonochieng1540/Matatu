@@ -9,7 +9,7 @@ from datetime import date, timedelta
 
 
 class UserRegistrationForm(forms.ModelForm):
-    """User registration form"""
+   
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}),
         label='Password'
@@ -46,7 +46,6 @@ class UserRegistrationForm(forms.ModelForm):
 
 
 class LoginForm(forms.Form):
-    """User login form"""
     username = forms.CharField(
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username or Phone'})
     )
@@ -56,7 +55,6 @@ class LoginForm(forms.Form):
 
 
 class UserProfileForm(forms.ModelForm):
-    """User profile update form"""
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'phone_number', 'date_of_birth', 'address', 'profile_picture']
@@ -71,7 +69,6 @@ class UserProfileForm(forms.ModelForm):
         }
 
 class TripSearchForm(forms.Form):
-    """Trip search form"""
     origin = forms.ModelChoiceField(
         queryset=Location.objects.filter(location_type='stage', is_active=True),
         widget=forms.Select(attrs={'class': 'form-select'}),
@@ -132,7 +129,6 @@ class TripSearchForm(forms.Form):
 
 
 class BookingForm(forms.ModelForm):
-    """Booking creation form"""
     promotion_code = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter promo code (optional)'}),
@@ -184,7 +180,6 @@ class BookingForm(forms.ModelForm):
 
 
 class ReviewForm(forms.ModelForm):
-    """Review submission form"""
     class Meta:
         model = Review
         fields = [
@@ -203,7 +198,6 @@ class ReviewForm(forms.ModelForm):
 
 
 class SACCOForm(forms.ModelForm):
-    """SACCO registration/update form"""
     class Meta:
         model = SACCO
         fields = [
@@ -224,7 +218,6 @@ class SACCOForm(forms.ModelForm):
 
 
 class VehicleForm(forms.ModelForm):
-    """Vehicle registration/update form"""
     class Meta:
         model = Vehicle
         fields = [
@@ -254,7 +247,6 @@ class VehicleForm(forms.ModelForm):
 
 
 class TripForm(forms.ModelForm):
-    """Trip creation/update form"""
     class Meta:
         model = Trip
         fields = [
@@ -284,7 +276,6 @@ class TripForm(forms.ModelForm):
 
 
 class RouteForm(forms.ModelForm):
-    """Route creation/update form"""
     class Meta:
         model = Route
         fields = ['name', 'origin', 'destination', 'distance', 'estimated_duration', 'base_fare', 'description']
@@ -300,7 +291,6 @@ class RouteForm(forms.ModelForm):
 
 
 class PromotionForm(forms.ModelForm):
-    """Promotion creation/update form"""
     class Meta:
         model = Promotion
         fields = [
