@@ -1,5 +1,3 @@
-# core/views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
@@ -18,7 +16,6 @@ import json
 
 
 def home(request):
-    """Homepage"""
     popular_routes = Route.objects.filter(is_active=True)[:6]
     recent_reviews = Review.objects.select_related('customer', 'sacco').filter(is_verified=True)[:6]
     
@@ -30,7 +27,7 @@ def home(request):
 
 
 def search_trips(request):
-    """Search for available trips"""
+    #Search for available trips
     form = TripSearchForm(request.GET or None)
     trips = None
     
@@ -61,7 +58,7 @@ def search_trips(request):
 
 
 def trip_detail(request, pk):
-    """View trip details"""
+    #View trip details
     trip = get_object_or_404(
         Trip.objects.select_related('route', 'vehicle', 'sacco', 'driver'),
         pk=pk
@@ -85,12 +82,8 @@ def trip_detail(request, pk):
     return render(request, 'core/trip_detail.html', context)
 
 
-# ============================================
-# Authentication
-# ============================================
-
 def register(request):
-    """User registration"""
+    #User registration
     if request.user.is_authenticated:
         return redirect('dashboard')
     
@@ -117,7 +110,6 @@ def register(request):
 
 
 def user_login(request):
-    """User login"""
     if request.user.is_authenticated:
         return redirect('dashboard')
     
@@ -146,14 +138,8 @@ def user_logout(request):
     messages.success(request, 'You have been logged out successfully.')
     return redirect('home')
 
-
-# ============================================
-# Booking Process
-# ============================================
-
 @login_required
 def create_booking(request, trip_id):
-    """Create a new booking"""
     trip = get_object_or_404(Trip, pk=trip_id)
     
     if not trip.is_bookable:
@@ -231,7 +217,6 @@ def create_booking(request, trip_id):
 
 @login_required
 def booking_payment(request, pk):
-    """Process booking payment"""
     booking = get_object_or_404(Booking, pk=pk, customer=request.user)
     
     if booking.status != 'pending':
@@ -293,7 +278,6 @@ def booking_payment(request, pk):
 
 @login_required
 def booking_detail(request, pk):
-    """View booking details"""
     booking = get_object_or_404(
         Booking.objects.select_related('trip__route', 'trip__vehicle', 'trip__sacco'),
         pk=pk
@@ -317,7 +301,6 @@ def booking_detail(request, pk):
 @login_required
 @require_POST
 def cancel_booking(request, pk):
-    """Cancel a booking"""
     booking = get_object_or_404(Booking, pk=pk, customer=request.user)
     
     if not booking.can_cancel():
@@ -354,13 +337,8 @@ def cancel_booking(request, pk):
     return redirect('booking_detail', pk=booking.pk)
 
 
-# ============================================
-# User Dashboard
-# ============================================
-
 @login_required
 def dashboard(request):
-    """User dashboard"""
     user = request.user
     
     if user.role == 'customer':
@@ -422,7 +400,6 @@ def dashboard(request):
 
 @login_required
 def my_bookings(request):
-    """List user's bookings"""
     bookings = Booking.objects.filter(
         customer=request.user
     ).select_related('trip__route', 'trip__vehicle', 'trip__sacco').order_by('-created_at')
@@ -445,7 +422,6 @@ def my_bookings(request):
 
 @login_required
 def profile(request):
-    """User profile"""
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
@@ -459,11 +435,6 @@ def profile(request):
         'form': form,
     }
     return render(request, 'accounts/profile.html', context)
-
-
-# ============================================
-# AJAX Views
-# ============================================
 
 def check_seat_availability(request):
     """Check seat availability (AJAX)"""
@@ -482,7 +453,6 @@ def check_seat_availability(request):
 
 
 def verify_promotion(request):
-    """Verify promotion code (AJAX)"""
     code = request.GET.get('code')
     amount = float(request.GET.get('amount', 0))
     
@@ -516,7 +486,6 @@ def verify_promotion(request):
 @login_required
 @require_POST
 def submit_review(request, booking_id):
-    """Submit review for a completed booking"""
     booking = get_object_or_404(Booking, pk=booking_id, customer=request.user)
     
     if booking.status != 'completed':
