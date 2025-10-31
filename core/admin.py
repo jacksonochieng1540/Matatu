@@ -1,4 +1,3 @@
-
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
@@ -155,7 +154,7 @@ class SystemSettingAdmin(admin.ModelAdmin):
     search_fields = ['key', 'description']
 
 
-# Customize admin site
+# Customize admin site 
 admin.site.site_header = "MatatuBook Administration"
 admin.site.site_title = "MatatuBook Admin"
 admin.site.index_title = "Welcome to MatatuBook Administration"
