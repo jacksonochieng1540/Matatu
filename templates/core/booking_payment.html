@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Payment - Booking {{ booking.booking_reference }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-method {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 15px;
+    }
+    
+    .payment-method:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+    }
+    
+    .payment-method.selected {
+        border-color: var(--primary-color);
+        background: #f0f7ff;
+    }
+    
+    .payment-method input[type="radio"] {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .payment-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+    }
+    
+    .countdown-timer {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--danger-color);
+    }
+    
+    .mpesa-logo {
+        height: 40px;
+    }
+    
+    .payment-details {
+        display: none;
+    }
+    
+    .payment-details.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Timer Alert -->
+    <div class="alert alert-warning shadow-sm mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-1"><i class="bi bi-clock-history"></i> Complete Payment</h5>
+                <p class="mb-0">Your seats are reserved. Complete payment within the time limit to confirm your booking.</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="countdown-timer" id="countdown">--:--</div>
+                <small class="text-muted">Time Remaining</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Payment Methods -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-credit-card"></i> Select Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="paymentForm">
+                        {% csrf_token %}
+                        
+                        <!-- M-Pesa -->
+                        <div class="payment-method" onclick="selectPayment('mpesa')">
+                            <div class="d-flex align-items-center">
+                                <input type="radio" name="payment_method" value="mpesa" id="mpesa" class="me-3">
+                                <div class="payment-icon bg-success me-3">
+                                    <i class="bi bi-phone"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">M-Pesa</h6>
+                                    <small class="text-muted">Pay with M-Pesa STK Push</small>
+                                </div>
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/M-PESA_LOGO-01.svg/320px-M-PESA_LOGO-01.svg.png" 
+                                     alt="M-Pesa" class="mpesa-logo">
+                            </div>
+                        </div>
+                        
+                        <div class="payment-details" id="mpesa-details">
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-info-circle"></i> How to pay with M-Pesa</h6>
+                                <ol class="mb-0">
+                                    <li>Enter your M-Pesa registered phone number</li>
+                                    <li>Click "Pay Now" to initiate payment</li>
+                                    <li>Enter your M-Pesa PIN on your phone</li>
+                                    <li>You will receive a confirmation SMS</li>
+                                </ol>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">M-Pesa Phone Number</label>
+                                <input type="tel" name="phone_number" class="form-control" 
+                                       placeholder="07XXXXXXXX or 2547XXXXXXXX" 
+                                       value="{{ booking.passenger_phone }}" required>
+                                <small class="form-text text-muted">Enter the phone number registered with M-Pesa</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Credit/Debit Card -->
+                        <div class="payment-method" onclick="selectPayment('card')">
+                            <div class="d-flex align-items-center">
+                                <input type="radio" name="payment_method" value="card" id="card" class="me-3">
+                                <div class="payment-icon bg-primary me-3">
+                                    <i class="bi bi-credit-card"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">Credit/Debit Card</h6>
+                                    <small class="text-muted">Visa, Mastercard accepted</small>
+                                </div>
+                                <div>
+                                    <i class="bi bi-credit-card-2-front display-6 text-muted"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-details" id="card-details">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> Card payment is coming soon. Please use M-Pesa or Cash payment.
+                            </div>
+                        </div>
+                        
+                        <!-- Cash Payment -->
+                        <div class="payment-method" onclick="selectPayment('cash')">
+                            <div class="d-flex align-items-center">
+                                <input type="radio" name="payment_method" value="cash" id="cash" class="me-3">
+                                <div class="payment-icon bg-warning me-3">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">Pay at Terminal</h6>
+                                    <small class="text-muted">Pay cash at the matatu terminal</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-details" id="cash-details">
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-info-circle"></i> Cash Payment Instructions</h6>
+                                <ul class="mb-0">
+                                    <li>Your booking will be marked as "Pending Payment"</li>
+                                    <li>Pay cash at the terminal before boarding</li>
+                                    <li>Show your booking reference: <strong>{{ booking.booking_reference }}</strong></li>
+                                    <li>Payment must be made at least 30 minutes before departure</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg" id="payBtn" disabled>
+                                <i class="bi bi-lock"></i> Pay KES {{ booking.total_fare|floatformat:0|intcomma }}
+                            </button>
+                            <a href="{% url 'booking_detail' booking.pk %}" class="btn btn-outline-secondary">
+                                View Booking Details
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Security Info -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6><i class="bi bi-shield-check text-success"></i> Secure Payment</h6>
+                    <p class="mb-0 small text-muted">
+                        Your payment information is encrypted and secure. We never store your card details or M-Pesa PIN. 
+                        All transactions are processed through secure payment gateways.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Booking Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow sticky-top" style="top: 80px;">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Payment Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="badge bg-primary badge-custom mb-2">Booking Reference</div>
+                        <h4 class="mb-0">{{ booking.booking_reference }}</h4>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Trip Details</h6>
+                        <p class="mb-1"><strong>{{ booking.trip.route.name }}</strong></p>
+                        <p class="mb-1 small text-muted">
+                            <i class="bi bi-calendar"></i> {{ booking.trip.departure_date|date:"D, M d, Y" }}
+                        </p>
+                        <p class="mb-1 small text-muted">
+                            <i class="bi bi-clock"></i> {{ booking.trip.departure_time|time:"g:i A" }}
+                        </p>
+                        <p class="mb-0 small text-muted">
+                            <i class="bi bi-bus-front"></i> {{ booking.trip.vehicle.registration_number }}
+                        </p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Passenger Details</h6>
+                        <p class="mb-1"><strong>{{ booking.passenger_name }}</strong></p>
+                        <p class="mb-1 small text-muted">
+                            <i class="bi bi-phone"></i> {{ booking.passenger_phone }}
+                        </p>
+                        <p class="mb-0 small text-muted">
+                            <i class="bi bi-people"></i> {{ booking.number_of_seats }} seat{{ booking.number_of_seats|pluralize }}
+                        </p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Journey</h6>
+                        <div class="d-flex align-items-center">
+                            <div class="text-center flex-grow-1">
+                                <i class="bi bi-geo-alt text-primary"></i>
+                                <div class="small">{{ booking.boarding_point.name }}</div>
+                            </div>
+                            <div class="text-muted">
+                                <i class="bi bi-arrow-right"></i>
+                            </div>
+                            <div class="text-center flex-grow-1">
+                                <i class="bi bi-geo-alt-fill text-success"></i>
+                                <div class="small">{{ booking.dropping_point.name }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Fare ({{ booking.number_of_seats }} × KES {{ booking.trip.fare|floatformat:0 }})</span>
+                        <span>KES {{ booking.total_fare|floatformat:0|intcomma }}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <h5>Total Amount</h5>
+                        <h4 class="text-primary mb-0">KES {{ booking.total_fare|floatformat:0|intcomma }}</h4>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-light">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> 
+                        You will receive a confirmation SMS and email after successful payment.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Countdown timer
+const expiryTime = new Date("{{ booking.booking_expires_at|date:'c' }}").getTime();
+
+function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = expiryTime - now;
+    
+    if (distance < 0) {
+        document.getElementById('countdown').innerHTML = "EXPIRED";
+        document.getElementById('payBtn').disabled = true;
+        document.getElementById('payBtn').innerHTML = '<i class="bi bi-x-circle"></i> Booking Expired';
+        
+        alert('Your booking has expired. The page will refresh to release your seats.');
+        setTimeout(() => location.reload(), 2000);
+        return;
+    }
+    
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    document.getElementById('countdown').innerHTML = 
+        String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    
+    // Warning when less than 2 minutes
+    if (distance < 120000) {
+        document.getElementById('countdown').style.color = '#dc2626';
+    }
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+// Payment method selection
+function selectPayment(method) {
+    // Remove all selections
+    document.querySelectorAll('.payment-method').forEach(el => {
+        el.classList.remove('selected');
+    });
+    document.querySelectorAll('.payment-details').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Add selection to clicked method
+    document.getElementById(method).checked = true;
+    document.getElementById(method).closest('.payment-method').classList.add('selected');
+    document.getElementById(method + '-details').classList.add('active');
+    
+    // Enable pay button
+    document.getElementById('payBtn').disabled = false;
+}
+
+// Form submission
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+    
+    if (!paymentMethod) {
+        e.preventDefault();
+        alert('Please select a payment method');
+        return;
+    }
+    
+    if (paymentMethod.value === 'mpesa') {
+        const phone = document.querySelector('input[name="phone_number"]').value;
+        if (!phone) {
+            e.preventDefault();
+            alert('Please enter your M-Pesa phone number');
+            return;
+        }
+        
+        // Show loading state
+        const btn = document.getElementById('payBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+    }
+    
+    if (paymentMethod.value === 'card') {
+        e.preventDefault();
+        alert('Card payment is not yet available. Please use M-Pesa or Cash payment.');
+    }
+});
+
+// Auto-select M-Pesa if available
+if (document.getElementById('mpesa')) {
+    selectPayment('mpesa');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Booking Details - {{ booking.booking_reference }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1.5rem;
+    }
+    
+    .qr-code-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+    }
+    
+    .qr-code-box {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        display: inline-block;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 20px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--primary-color);
+    }
+    
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: -17px;
+        top: 17px;
+        width: 2px;
+        height: 100%;
+        background: #e9ecef;
+    }
+    
+    .timeline-item:last-child::after {
+        display: none;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Status Header -->
+    <div class="card shadow-sm mb-4 {% if booking.status == 'confirmed' %}border-success{% elif booking.status == 'cancelled' %}border-danger{% endif %}">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-2">
+                        {% if booking.status == 'confirmed' %}
+                        <i class="bi bi-check-circle-fill text-success display-4 me-3"></i>
+                        {% elif booking.status == 'pending' %}
+                        <i class="bi bi-clock-fill text-warning display-4 me-3"></i>
+                        {% elif booking.status == 'cancelled' %}
+                        <i class="bi bi-x-circle-fill text-danger display-4 me-3"></i>
+                        {% else %}
+                        <i class="bi bi-info-circle-fill text-info display-4 me-3"></i>
+                        {% endif %}
+                        
+                        <div>
+                            <h3 class="mb-1">Booking {{ booking.get_status_display }}</h3>
+                            <p class="mb-0 text-muted">Reference: <strong>{{ booking.booking_reference }}</strong></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if booking.status == 'confirmed' %}
+                    <span class="badge bg-success status-badge">Confirmed</span>
+                    {% elif booking.status == 'pending' %}
+                    <span class="badge bg-warning status-badge">Pending Payment</span>
+                    {% elif booking.status == 'cancelled' %}
+                    <span class="badge bg-danger status-badge">Cancelled</span>
+                    {% elif booking.status == 'completed' %}
+                    <span class="badge bg-secondary status-badge">Completed</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Main Details -->
+        <div class="col-lg-8">
+            <!-- QR Code Section (if confirmed) -->
+            {% if booking.status == 'confirmed' and booking.qr_code %}
+            <div class="qr-code-section shadow-sm mb-4">
+                <h4 class="mb-3"><i class="bi bi-qr-code"></i> Your Digital Ticket</h4>
+                <div class="qr-code-box mb-3">
+                    <img src="{{ booking.qr_code.url }}" alt="QR Code" style="max-width: 200px;">
+                </div>
+                <p class="mb-0">Show this QR code at the terminal for check-in</p>
+            </div>
+            {% endif %}
+            
+            <!-- Trip Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-bus-front"></i> Trip Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Route</h6>
+                            <h5>{{ booking.trip.route.name }}</h5>
+                            <p class="mb-0 text-muted">{{ booking.trip.route.distance }} km • {{ booking.trip.route.estimated_duration }} mins</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">SACCO</h6>
+                            <h5>{{ booking.trip.sacco.name }}</h5>
+                            <div>
+                                <span class="rating-stars">
+                                    {% for i in "12345" %}
+                                    {% if forloop.counter <= booking.trip.sacco.rating|floatformat:0 %}
+                                    <i class="bi bi-star-fill"></i>
+                                    {% else %}
+                                    <i class="bi bi-star"></i>
+                                    {% endif %}
+                                    {% endfor %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Departure</h6>
+                            <p class="mb-1"><i class="bi bi-calendar"></i> {{ booking.trip.departure_date|date:"l, F d, Y" }}</p>
+                            <p class="mb-0"><i class="bi bi-clock"></i> {{ booking.trip.departure_time|time:"g:i A" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Vehicle</h6>
+                            <p class="mb-1">{{ booking.trip.vehicle.registration_number }}</p>
+                            <p class="mb-0 text-muted">{{ booking.trip.vehicle.get_vehicle_type_display }}</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2"><i class="bi bi-geo-alt"></i> Boarding Point</h6>
+                                <h6 class="mb-0">{{ booking.boarding_point.name }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2"><i class="bi bi-geo-alt-fill"></i> Dropping Point</h6>
+                                <h6 class="mb-0">{{ booking.dropping_point.name }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Passenger Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person"></i> Passenger Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">Name</h6>
+                            <p class="mb-0">{{ booking.passenger_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">Phone Number</h6>
+                            <p class="mb-0">{{ booking.passenger_phone }}</p>
+                        </div>
+                        {% if booking.passenger_email %}
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">Email</h6>
+                            <p class="mb-0">{{ booking.passenger_email }}</p>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-2">Number of Seats</h6>
+                            <p class="mb-0">{{ booking.number_of_seats }} seat{{ booking.number_of_seats|pluralize }}</p>
+                        </div>
+                        {% if booking.seat_numbers %}
+                        <div class="col-12">
+                            <h6 class="text-muted mb-2">Seat Numbers</h6>
+                            <div>
+                                {% for seat in booking.seat_numbers %}
+                                <span class="badge bg-primary me-1">Seat {{ seat }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Information -->
+            {% if payments %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-credit-card"></i> Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for payment in payments %}
+                        <div class="timeline-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">
+                                        {{ payment.get_payment_method_display }}
+                                        {% if payment.status == 'completed' %}
+                                        <span class="badge bg-success">Successful</span>
+                                        {% elif payment.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                        {% elif payment.status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </h6>
+                                    <p class="mb-1 text-muted">KES {{ payment.amount|floatformat:0|intcomma }}</p>
+                                    {% if payment.mpesa_receipt %}
+                                    <p class="mb-1 small">Receipt: {{ payment.mpesa_receipt }}</p>
+                                    {% endif %}
+                                    <p class="mb-0 small text-muted">{{ payment.created_at|naturaltime }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Actions Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card shadow-sm mb-4 sticky-top" style="top: 80px;">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if booking.status == 'pending' %}
+                    <a href="{% url 'booking_payment' booking.pk %}" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-credit-card"></i> Complete Payment
+                    </a>
+                    {% endif %}
+                    
+                    {% if booking.status == 'confirmed' %}
+                    <button class="btn btn-success w-100 mb-2" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Print Ticket
+                    </button>
+                    <button class="btn btn-info w-100 mb-2" onclick="downloadQR()">
+                        <i class="bi bi-download"></i> Download QR Code
+                    </button>
+                    {% endif %}
+                    
+                    {% if can_cancel %}
+                    <button class="btn btn-danger w-100 mb-2" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                        <i class="bi bi-x-circle"></i> Cancel Booking
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'my_bookings' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-list"></i> View All Bookings
+                    </a>
+                </div>
+                
+                <div class="card-footer bg-light">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> Need help? Contact support
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Booking Summary -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="mb-0">Fare Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Base Fare ({{ booking.number_of_seats }} × KES {{ booking.trip.fare|floatformat:0 }})</span>
+                        <span>KES {{ booking.total_fare|floatformat:0|intcomma }}</span>
+                    </div>
+                    
+                    {% if booking.refund_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Refund Amount</span>
+                        <span>KES {{ booking.refund_amount|floatformat:0|intcomma }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <h6>Total Paid</h6>
+                        <h5 class="text-primary mb-0">KES {{ booking.total_fare|floatformat:0|intcomma }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Booking Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'cancel_booking' booking.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        <strong>Cancellation Policy</strong>
+                        <p class="mb-0 mt-2">Refund amount will be 80% of the total fare. The refund will be processed within 24 hours.</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason for cancellation</label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Please tell us why you're cancelling..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Booking</button>
+                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function downloadQR() {
+    {% if booking.qr_code %}
+    const link = document.createElement('a');
+    link.href = '{{ booking.qr_code.url }}';
+    link.download = 'booking-{{ booking.booking_reference }}-qr.png';
+    link.click();
+    {% else %}
+    alert('QR code not available');
+    {% endif %}
+}
+
+// Auto-refresh for pending payments
+{% if booking.status == 'pending' %}
+setTimeout(function() {
+    location.reload();
+}, 30000); // Refresh every 30 seconds
+{% endif %}
+</script>
+{% endblock %}
