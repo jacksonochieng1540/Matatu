@@ -1,5 +1,3 @@
-# core/models.py
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -9,12 +7,8 @@ from phonenumber_field.modelfields import PhoneNumberField
 from mptt.models import MPTTModel, TreeForeignKey
 import uuid
 
-# ============================================
-# User Management
-# ============================================
 
 class User(AbstractUser):
-    """Extended User model"""
     ROLE_CHOICES = [
         ('customer', 'Customer'),
         ('driver', 'Driver'),
@@ -46,12 +40,7 @@ class User(AbstractUser):
         return reverse('profile', kwargs={'pk': self.pk})
 
 
-# ============================================
-# SACCO & Fleet Management
-# ============================================
-
 class SACCO(models.Model):
-    """Matatu SACCO/Company"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     registration_number = models.CharField(max_length=50, unique=True)
@@ -79,7 +68,6 @@ class SACCO(models.Model):
 
 
 class Vehicle(models.Model):
-    """Matatu/Vehicle"""
     VEHICLE_TYPE_CHOICES = [
         ('14_seater', '14 Seater'),
         ('25_seater', '25 Seater'),
@@ -122,7 +110,6 @@ class Vehicle(models.Model):
 
 
 class Driver(models.Model):
-    """Driver Profile"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='driver_profile')
     sacco = models.ForeignKey(SACCO, on_delete=models.CASCADE, related_name='drivers')
@@ -142,7 +129,6 @@ class Driver(models.Model):
 
 
 class Conductor(models.Model):
-    """Conductor Profile"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='conductor_profile')
     sacco = models.ForeignKey(SACCO, on_delete=models.CASCADE, related_name='conductors')
@@ -155,12 +141,7 @@ class Conductor(models.Model):
         return f"{self.user.get_full_name()} - {self.badge_number}"
 
 
-# ============================================
-# Routes & Locations
-# ============================================
-
 class Location(MPTTModel):
-    """Hierarchical location model"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
@@ -181,7 +162,6 @@ class Location(MPTTModel):
 
 
 class Route(models.Model):
-    """Matatu Route"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     origin = models.ForeignKey(Location, on_delete=models.PROTECT, related_name='routes_from')
@@ -202,7 +182,6 @@ class Route(models.Model):
 
 
 class RouteStop(models.Model):
-    """Intermediate stops on a route"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     route = models.ForeignKey(Route, on_delete=models.CASCADE, related_name='stops')
     location = models.ForeignKey(Location, on_delete=models.PROTECT)
@@ -219,12 +198,7 @@ class RouteStop(models.Model):
         return f"{self.route.name} - Stop {self.sequence}: {self.location.name}"
 
 
-# ============================================
-# Scheduling & Trips
-# ============================================
-
 class Schedule(models.Model):
-    """Regular schedule for a route"""
     DAYS_OF_WEEK = [
         ('monday', 'Monday'),
         ('tuesday', 'Tuesday'),
@@ -252,7 +226,6 @@ class Schedule(models.Model):
 
 
 class Trip(models.Model):
-    """Individual trip instance"""
     STATUS_CHOICES = [
         ('scheduled', 'Scheduled'),
         ('boarding', 'Boarding'),
@@ -302,10 +275,9 @@ class Trip(models.Model):
         return (
             self.status == 'scheduled' and
             self.available_seats > 0 and
-            time_diff >= 30  # Minimum 30 minutes before departure
+            time_diff >= 30  
         )
 class Booking(models.Model):
-    """Customer booking"""
     STATUS_CHOICES = [
         ('pending', 'Pending Payment'),
         ('confirmed', 'Confirmed'),
@@ -356,7 +328,6 @@ class Booking(models.Model):
         super().save(*args, **kwargs)
     
     def generate_reference(self):
-        """Generate unique booking reference"""
         import random
         import string
         while True:
@@ -373,11 +344,10 @@ class Booking(models.Model):
             timezone.datetime.combine(self.trip.departure_date, self.trip.departure_time)
         )
         hours_remaining = (departure - now).total_seconds() / 3600
-        return hours_remaining >= 2  # 2 hours before departure
+        return hours_remaining >= 2  
 
 
 class Seat(models.Model):
-    """Seat in a vehicle"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='seats')
     seat_number = models.CharField(max_length=10)
@@ -395,7 +365,6 @@ class Seat(models.Model):
 
 
 class SeatBooking(models.Model):
-    """Individual seat booking"""
     STATUS_CHOICES = [
         ('held', 'Held'),
         ('booked', 'Booked'),
@@ -416,13 +385,7 @@ class SeatBooking(models.Model):
     def __str__(self):
         return f"{self.trip} - Seat {self.seat.seat_number}"
 
-
-# ============================================
-# Payment Management
-# ============================================
-
 class Payment(models.Model):
-    """Payment transaction"""
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('processing', 'Processing'),
@@ -466,7 +429,6 @@ class Payment(models.Model):
 
 
 class Refund(models.Model):
-    """Refund transaction"""
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('processing', 'Processing'),
@@ -492,12 +454,7 @@ class Refund(models.Model):
         return f"Refund for {self.booking.booking_reference} - {self.amount}"
 
 
-# ============================================
-# Reviews & Ratings
-# ============================================
-
 class Review(models.Model):
-    """Trip/Service review"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name='review')
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
@@ -522,10 +479,6 @@ class Review(models.Model):
     def __str__(self):
         return f"Review by {self.customer.get_full_name()} - {self.overall_rating} stars"
 
-
-# ============================================
-# Notifications
-# ============================================
 
 class Notification(models.Model):
     """User notifications"""
@@ -557,7 +510,6 @@ class Notification(models.Model):
 
 
 class SMSLog(models.Model):
-    """SMS sending log"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient = PhoneNumberField()
     message = models.TextField()
@@ -570,7 +522,6 @@ class SMSLog(models.Model):
 
 
 class EmailLog(models.Model):
-    """Email sending log"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient = models.EmailField()
     subject = models.CharField(max_length=200)
@@ -583,12 +534,7 @@ class EmailLog(models.Model):
         ordering = ['-sent_at']
 
 
-# ============================================
-# System Settings
-# ============================================
-
 class SystemSetting(models.Model):
-    """System-wide settings"""
     key = models.CharField(max_length=100, unique=True)
     value = models.TextField()
     description = models.TextField(blank=True)
@@ -599,7 +545,6 @@ class SystemSetting(models.Model):
 
 
 class Promotion(models.Model):
-    """Promotional offers"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     code = models.CharField(max_length=50, unique=True)
     title = models.CharField(max_length=200)
@@ -625,7 +570,6 @@ class Promotion(models.Model):
         return f"{self.code} - {self.title}"
     
     def is_valid(self):
-        """Check if promotion is currently valid"""
         now = timezone.now()
         return (
             self.is_active and
