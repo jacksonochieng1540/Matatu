@@ -1,7 +1,6 @@
 from django.utils import timezone
 
 class UserActivityMiddleware:
-    """Track user activity"""
     def __init__(self, get_response):
         self.get_response = get_response
 
