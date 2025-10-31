@@ -1,21 +1,11 @@
-// ============================================
-// MatatuBook Custom JavaScript
-// ============================================
 
-// Global Configuration
 const CONFIG = {
     apiBaseUrl: '/api',
     csrfToken: document.querySelector('[name=csrfmiddlewaretoken]')?.value,
     toastDuration: 3000,
 };
 
-// ============================================
-// Utility Functions
-// ============================================
 
-/**
- * Show toast notification
- */
 function showToast(message, type = 'info') {
     const toastContainer = document.getElementById('toastContainer') || createToastContainer();
     
@@ -42,9 +32,7 @@ function createToastContainer() {
     return container;
 }
 
-/**
- * Format currency
- */
+
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-KE', {
         style: 'currency',
@@ -53,9 +41,7 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
-/**
- * Format date
- */
+
 function formatDate(dateString, format = 'long') {
     const date = new Date(dateString);
     const options = format === 'long' 
@@ -64,9 +50,7 @@ function formatDate(dateString, format = 'long') {
     return date.toLocaleDateString('en-US', options);
 }
 
-/**
- * Format time
- */
+
 function formatTime(timeString) {
     const [hours, minutes] = timeString.split(':');
     const hour = parseInt(hours);
@@ -75,9 +59,7 @@ function formatTime(timeString) {
     return `${displayHour}:${minutes} ${ampm}`;
 }
 
-/**
- * AJAX Request Helper
- */
+
 async function apiRequest(url, method = 'GET', data = null) {
     const options = {
         method: method,
@@ -105,9 +87,7 @@ async function apiRequest(url, method = 'GET', data = null) {
     }
 }
 
-/**
- * Show loading overlay
- */
+
 function showLoading() {
     const overlay = document.createElement('div');
     overlay.id = 'loadingOverlay';
@@ -123,9 +103,7 @@ function hideLoading() {
     }
 }
 
-/**
- * Debounce function
- */
+
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -138,9 +116,7 @@ function debounce(func, wait) {
     };
 }
 
-/**
- * Copy to clipboard
- */
+
 async function copyToClipboard(text) {
     try {
         await navigator.clipboard.writeText(text);
@@ -151,29 +127,19 @@ async function copyToClipboard(text) {
     }
 }
 
-// ============================================
-// Form Validation
-// ============================================
 
-/**
- * Validate phone number (Kenya format)
- */
 function validatePhoneNumber(phone) {
     const phoneRegex = /^(?:254|\+254|0)?([17]\d{8})$/;
     return phoneRegex.test(phone);
 }
 
-/**
- * Validate email
- */
+
 function validateEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
 
-/**
- * Form validation handler
- */
+
 function setupFormValidation(formId) {
     const form = document.getElementById(formId);
     if (!form) return;
@@ -187,13 +153,7 @@ function setupFormValidation(formId) {
     });
 }
 
-// ============================================
-// Search & Filter
-// ============================================
 
-/**
- * Real-time search
- */
 function setupSearch(inputId, targetClass) {
     const searchInput = document.getElementById(inputId);
     if (!searchInput) return;
@@ -211,13 +171,7 @@ function setupSearch(inputId, targetClass) {
     searchInput.addEventListener('input', handleSearch);
 }
 
-// ============================================
-// Booking Functions
-// ============================================
 
-/**
- * Update booking summary
- */
 function updateBookingSummary(seats, farePerSeat) {
     const numSeats = seats.length;
     const totalFare = numSeats * farePerSeat;
@@ -232,9 +186,7 @@ function updateBookingSummary(seats, farePerSeat) {
     }
 }
 
-/**
- * Check seat availability
- */
+
 async function checkSeatAvailability(tripId) {
     try {
         const data = await apiRequest(`/ajax/check-seats/?trip_id=${tripId}`);
@@ -245,9 +197,6 @@ async function checkSeatAvailability(tripId) {
     }
 }
 
-/**
- * Verify promotion code
- */
 async function verifyPromotionCode(code, amount) {
     try {
         const data = await apiRequest(`/ajax/verify-promo/?code=${code}&amount=${amount}`);
@@ -258,13 +207,7 @@ async function verifyPromotionCode(code, amount) {
     }
 }
 
-// ============================================
-// Payment Functions
-// ============================================
 
-/**
- * Initialize payment
- */
 async function initiatePayment(bookingId, paymentMethod, phoneNumber = null) {
     showLoading();
     
@@ -291,9 +234,6 @@ async function initiatePayment(bookingId, paymentMethod, phoneNumber = null) {
     }
 }
 
-/**
- * Check payment status
- */
 async function checkPaymentStatus(bookingId) {
     try {
         const data = await apiRequest(`/api/payments/status/${bookingId}/`);
@@ -304,13 +244,7 @@ async function checkPaymentStatus(bookingId) {
     }
 }
 
-// ============================================
-// Notification Functions
-// ============================================
 
-/**
- * Mark notification as read
- */
 async function markNotificationRead(notificationId) {
     try {
         await apiRequest(`/api/notifications/${notificationId}/read/`, 'POST');
@@ -326,9 +260,6 @@ async function markNotificationRead(notificationId) {
     }
 }
 
-/**
- * Load notifications
- */
 async function loadNotifications() {
     try {
         const data = await apiRequest('/api/notifications/');
@@ -353,13 +284,7 @@ async function loadNotifications() {
     }
 }
 
-// ============================================
-// Auto-refresh for pending status
-// ============================================
 
-/**
- * Auto-refresh page for pending payments/bookings
- */
 function setupAutoRefresh(interval = 30000) {
     const hasPendingStatus = document.querySelector('[data-status="pending"]');
     
@@ -370,13 +295,7 @@ function setupAutoRefresh(interval = 30000) {
     }
 }
 
-// ============================================
-// Image Preview
-// ============================================
 
-/**
- * Preview image before upload
- */
 function setupImagePreview(inputId, previewId) {
     const input = document.getElementById(inputId);
     const preview = document.getElementById(previewId);
@@ -396,13 +315,7 @@ function setupImagePreview(inputId, previewId) {
     });
 }
 
-// ============================================
-// Date & Time Helpers
-// ============================================
 
-/**
- * Set minimum date for date inputs (today)
- */
 function setMinimumDate() {
     const dateInputs = document.querySelectorAll('input[type="date"]');
     const today = new Date().toISOString().split('T')[0];
@@ -428,9 +341,7 @@ function getTimeDifference(targetDate, targetTime) {
     return { hours, minutes, total: diff };
 }
 
-// ============================================
-// Initialize on DOM Load
-// ============================================
+
 
 document.addEventListener('DOMContentLoaded', function() {
     // Set minimum dates
@@ -496,9 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ============================================
-// Export functions for global use
-// ============================================
+
 
 window.MatatuBook = {
     showToast,
@@ -521,9 +430,7 @@ window.MatatuBook = {
     debounce,
 };
 
-// ============================================
-// Service Worker Registration (for PWA)
-// ============================================
+
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
