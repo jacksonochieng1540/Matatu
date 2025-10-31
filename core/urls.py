@@ -17,11 +17,13 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('my-bookings/', views.my_bookings, name='my_bookings'),
     
+    
     # Booking process
     path('booking/create/<uuid:trip_id>/', views.create_booking, name='create_booking'),
     path('booking/<uuid:pk>/', views.booking_detail, name='booking_detail'),
     path('booking/<uuid:pk>/payment/', views.booking_payment, name='booking_payment'),
     path('booking/<uuid:pk>/cancel/', views.cancel_booking, name='cancel_booking'),
+    path('booking/<uuid:booking_id>/review/', views.submit_review, name='submit_review'),
     
     # AJAX endpoints
     path('ajax/check-seats/', views.check_seat_availability, name='check_seat_availability'),

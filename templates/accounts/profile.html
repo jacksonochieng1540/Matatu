@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}My Profile - MatatuBook{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-person-circle"></i> My Profile</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="text-center mb-4">
+                            {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}" alt="Profile" 
+                                 class="rounded-circle mb-3" id="profilePreview"
+                                 style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3"
+                                 style="width: 150px; height: 150px; font-size: 60px;">
+                                {{ user.first_name.0|default:user.username.0 }}{{ user.last_name.0|default:"" }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <label for="id_profile_picture" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-camera"></i> Change Photo
+                                </label>
+                                {{ form.profile_picture }}
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form.first_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.last_name|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        {{ form.email|as_crispy_field }}
+                        {{ form.phone_number|as_crispy_field }}
+                        {{ form.date_of_birth|as_crispy_field }}
+                        {{ form.address|as_crispy_field }}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Update Profile
+                            </button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Preview profile picture
+document.getElementById('id_profile_picture')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('profilePreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Make file input hidden
+const fileInput = document.getElementById('id_profile_picture');
+if (fileInput) {
+    fileInput.style.display = 'none';
+}
+</script>
+{% endblock %}

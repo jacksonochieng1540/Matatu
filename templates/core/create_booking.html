@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}Complete Booking - MatatuBook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-bar-custom {
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+    }
+    
+    .progress-bar-custom .progress-fill {
+        height: 100%;
+        background: var(--primary-color);
+        border-radius: 2px;
+        width: 66%;
+    }
+    
+    .booking-step {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 30px;
+    }
+    
+    .step-number {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+    
+    .step-number.active {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .step-number.completed {
+        background: var(--success-color);
+        color: white;
+    }
+    
+    .promo-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Progress Steps -->
+    <div class="mb-4">
+        <div class="booking-step">
+            <div class="step-number completed"><i class="bi bi-check"></i></div>
+            <span>Select Seats</span>
+        </div>
+        <div class="booking-step">
+            <div class="step-number active">2</div>
+            <span>Passenger Details</span>
+        </div>
+        <div class="booking-step">
+            <div class="step-number">3</div>
+            <span>Payment</span>
+        </div>
+        <div class="progress-bar-custom mt-2">
+            <div class="progress-fill"></div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Booking Form -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-fill"></i> Passenger Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="bookingForm">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form.passenger_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.passenger_phone|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.passenger_email|as_crispy_field }}
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form.boarding_point|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.dropping_point|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.number_of_seats|as_crispy_field }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.special_requests|as_crispy_field }}
+                        </div>
+                        
+                        <!-- Promotion Code -->
+                        <div class="promo-section mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0"><i class="bi bi-tag"></i> Have a Promo Code?</h6>
+                                <button type="button" class="btn btn-light btn-sm" onclick="togglePromo()">
+                                    <span id="promoToggleText">Enter Code</span>
+                                </button>
+                            </div>
+                            <div id="promoInput" style="display: none;">
+                                <div class="input-group mt-3">
+                                    {{ form.promotion_code }}
+                                    <button type="button" class="btn btn-light" onclick="verifyPromo()">
+                                        Apply
+                                    </button>
+                                </div>
+                                <div id="promoMessage" class="mt-2"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Terms -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.terms_accepted }}
+                                <label class="form-check-label" for="{{ form.terms_accepted.id_for_label }}">
+                                    I agree to the <a href="#" target="_blank">Terms and Conditions</a> and 
+                                    <a href="#" target="_blank">Cancellation Policy</a>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-right-circle"></i> Continue to Payment
+                            </button>
+                            <a href="{% url 'trip_detail' trip.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Seat Selection
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Booking Summary Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow sticky-top" style="top: 80px;">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Booking Summary</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Trip Details -->
+                    <div class="mb-3 pb-3 border-bottom">
+                        <h6 class="text-muted mb-2">Trip Details</h6>
+                        <h6>{{ trip.route.name }}</h6>
+                        <p class="mb-1 small text-muted">
+                            <i class="bi bi-calendar"></i> {{ trip.departure_date|date:"D, M d, Y" }}
+                        </p>
+                        <p class="mb-1 small text-muted">
+                            <i class="bi bi-clock"></i> {{ trip.departure_time|time:"g:i A" }}
+                        </p>
+                        <p class="mb-0 small text-muted">
+                            <i class="bi bi-bus-front"></i> {{ trip.vehicle.registration_number }}
+                        </p>
+                    </div>
+                    
+                    <!-- SACCO Info -->
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-center">
+                            {% if trip.sacco.logo %}
+                            <img src="{{ trip.sacco.logo.url }}" alt="{{ trip.sacco.name }}" 
+                                 class="me-2" style="height: 40px;">
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0">{{ trip.sacco.name }}</h6>
+                                <small class="text-muted">
+                                    <span class="rating-stars">
+                                        {% for i in "12345" %}
+                                        {% if forloop.counter <= trip.sacco.rating|floatformat:0 %}
+                                        <i class="bi bi-star-fill"></i>
+                                        {% else %}
+                                        <i class="bi bi-star"></i>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selected Seats -->
+                    <div class="mb-3 pb-3 border-bottom">
+                        <h6 class="text-muted mb-2">Selected Seats</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-primary badge-custom">Seat 12</span>
+                            <span class="badge bg-primary badge-custom">Seat 13</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Pricing -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Fare ({{ trip.vehicle.capacity }} seats)</span>
+                            <span id="baseFare">KES {{ trip.fare|floatformat:0|intcomma }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2" id="discountRow" style="display: none !important;">
+                            <span class="text-success">Discount</span>
+                            <span class="text-success" id="discountAmount">- KES 0</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Service Fee</span>
+                            <span>KES 0</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <h5>Total Amount</h5>
+                            <h4 class="text-primary mb-0" id="finalTotal">KES {{ trip.fare|floatformat:0|intcomma }}</h4>
+                        </div>
+                    </div>
+                    
+                    <!-- Security Badge -->
+                    <div class="alert alert-info mb-0">
+                        <small>
+                            <i class="bi bi-shield-check"></i> 
+                            <strong>Secure Booking</strong><br>
+                            Your payment information is protected with 256-bit SSL encryption
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-light">
+                    <div class="d-flex align-items-center text-muted small">
+                        <i class="bi bi-clock-history me-2"></i>
+                        <span>Free cancellation up to 2 hours before departure</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const baseFare = {{ trip.fare }};
+const numSeats = parseInt('{{ form.number_of_seats.value|default:1 }}');
+let discountApplied = 0;
+
+function togglePromo() {
+    const promoInput = document.getElementById('promoInput');
+    const toggleText = document.getElementById('promoToggleText');
+    
+    if (promoInput.style.display === 'none') {
+        promoInput.style.display = 'block';
+        toggleText.textContent = 'Hide';
+    } else {
+        promoInput.style.display = 'none';
+        toggleText.textContent = 'Enter Code';
+    }
+}
+
+function verifyPromo() {
+    const promoCode = document.querySelector('input[name="promotion_code"]').value;
+    const amount = baseFare * numSeats;
+    
+    if (!promoCode) {
+        showPromoMessage('Please enter a promo code', 'danger');
+        return;
+    }
+    
+    // AJAX call to verify promo code
+    fetch(`/ajax/verify-promo/?code=${promoCode}&amount=${amount}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.valid) {
+                discountApplied = data.discount;
+                updatePricing();
+                showPromoMessage(data.message, 'success');
+            } else {
+                discountApplied = 0;
+                updatePricing();
+                showPromoMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showPromoMessage('Error verifying promo code', 'danger');
+        });
+}
+
+function showPromoMessage(message, type) {
+    const messageDiv = document.getElementById('promoMessage');
+    messageDiv.className = `alert alert-${type} mb-0`;
+    messageDiv.textContent = message;
+    messageDiv.style.display = 'block';
+}
+
+function updatePricing() {
+    const total = (baseFare * numSeats) - discountApplied;
+    
+    document.getElementById('finalTotal').textContent = 'KES ' + total.toLocaleString();
+    
+    if (discountApplied > 0) {
+        document.getElementById('discountRow').style.display = 'flex';
+        document.getElementById('discountAmount').textContent = '- KES ' + discountApplied.toLocaleString();
+    } else {
+        document.getElementById('discountRow').style.display = 'none';
+    }
+}
+
+// Form validation
+document.getElementById('bookingForm').addEventListener('submit', function(e) {
+    const termsCheckbox = document.querySelector('input[name="terms_accepted"]');
+    
+    if (!termsCheckbox.checked) {
+        e.preventDefault();
+        alert('Please accept the terms and conditions to continue');
+        termsCheckbox.focus();
+    }
+});
+
+// Update passenger count display
+document.querySelector('input[name="number_of_seats"]')?.addEventListener('change', function(e) {
+    updatePricing();
+});
+</script>
+{% endblock %}

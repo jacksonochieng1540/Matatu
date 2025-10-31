@@ -1,0 +1,485 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ trip.route.name }} - Trip Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .seat-map {
+        display: grid;
+        gap: 10px;
+        justify-content: center;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    
+    .seat-row {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+    
+    .seat {
+        width: 45px;
+        height: 45px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: white;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .seat:hover:not(.occupied):not(.driver) {
+        transform: scale(1.1);
+        border-color: var(--primary-color);
+    }
+    
+    .seat.available {
+        background: #e8f5e9;
+        border-color: #4caf50;
+        color: #2e7d32;
+    }
+    
+    .seat.selected {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+        transform: scale(1.1);
+    }
+    
+    .seat.occupied {
+        background: #ffebee;
+        border-color: #f44336;
+        color: #c62828;
+        cursor: not-allowed;
+    }
+    
+    .seat.driver {
+        background: #333;
+        border-color: #333;
+        color: white;
+        cursor: not-allowed;
+    }
+    
+    .seat-aisle {
+        width: 30px;
+    }
+    
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 20px;
+    }
+    
+    .legend-box {
+        width: 30px;
+        height: 30px;
+        border-radius: 5px;
+        margin-right: 8px;
+    }
+    
+    .trip-info-card {
+        position: sticky;
+        top: 80px;
+    }
+    
+    .driver-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'search_trips' %}">Search</a></li>
+            <li class="breadcrumb-item active">Trip Details</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Left Column - Trip Info & Seat Selection -->
+        <div class="col-lg-8">
+            <!-- Trip Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h3 class="mb-1">{{ trip.route.name }}</h3>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-calendar"></i> {{ trip.departure_date|date:"l, F d, Y" }}
+                            </p>
+                        </div>
+                        {% if trip.is_express %}
+                        <span class="badge bg-danger badge-custom">Express Service</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">Departure</h6>
+                                <h4 class="mb-0">{{ trip.departure_time|time:"g:i A" }}</h4>
+                                <p class="mb-0">{{ trip.route.origin.name }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">Arrival (Est.)</h6>
+                                <h4 class="mb-0">{{ trip.arrival_time|time:"g:i A"|default:"--" }}</h4>
+                                <p class="mb-0">{{ trip.route.destination.name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SACCO & Vehicle Info -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5>{{ trip.sacco.name }}</h5>
+                            <p class="text-muted mb-2">{{ trip.vehicle.registration_number }} - {{ trip.vehicle.get_vehicle_type_display }}</p>
+                            
+                            <div class="mb-2">
+                                {% if trip.vehicle.has_wifi %}
+                                <span class="badge bg-info me-1"><i class="bi bi-wifi"></i> WiFi</span>
+                                {% endif %}
+                                {% if trip.vehicle.has_ac %}
+                                <span class="badge bg-success me-1"><i class="bi bi-snow"></i> AC</span>
+                                {% endif %}
+                                {% if trip.vehicle.has_charging_ports %}
+                                <span class="badge bg-warning me-1"><i class="bi bi-plug"></i> Charging</span>
+                                {% endif %}
+                                {% if trip.vehicle.has_entertainment %}
+                                <span class="badge bg-primary me-1"><i class="bi bi-tv"></i> Entertainment</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <span class="rating-stars">
+                                    {% for i in "12345" %}
+                                    {% if forloop.counter <= trip.sacco.rating|floatformat:0 %}
+                                    <i class="bi bi-star-fill"></i>
+                                    {% else %}
+                                    <i class="bi bi-star"></i>
+                                    {% endif %}
+                                    {% endfor %}
+                                </span>
+                                <small class="text-muted">({{ trip.sacco.total_reviews }} reviews)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if trip.sacco.logo %}
+                            <img src="{{ trip.sacco.logo.url }}" alt="{{ trip.sacco.name }}" class="img-fluid" style="max-height: 80px;">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Driver Info -->
+            <div class="driver-section">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <div class="rounded-circle bg-white d-flex align-items-center justify-content-center" 
+                             style="width: 60px; height: 60px;">
+                            <i class="bi bi-person-circle display-6 text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <h6 class="mb-0">Your Driver</h6>
+                        <h5 class="mb-0">{{ trip.driver.user.get_full_name }}</h5>
+                        <small>License: {{ trip.driver.license_number }}</small>
+                        <div class="mt-1">
+                            <span class="rating-stars">
+                                {% for i in "12345" %}
+                                {% if forloop.counter <= trip.driver.rating|floatformat:0 %}
+                                <i class="bi bi-star-fill"></i>
+                                {% else %}
+                                <i class="bi bi-star"></i>
+                                {% endif %}
+                                {% endfor %}
+                            </span>
+                            <small>({{ trip.driver.total_trips }} trips)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seat Selection -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-grid-3x3"></i> Select Your Seats</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Legend -->
+                    <div class="mb-4 text-center">
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #e8f5e9; border: 2px solid #4caf50;"></div>
+                            <span>Available</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: var(--primary-color);"></div>
+                            <span>Selected</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #ffebee; border: 2px solid #f44336;"></div>
+                            <span>Occupied</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #333;"></div>
+                            <span>Driver</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Seat Map -->
+                    <div class="seat-map" id="seatMap">
+                        <!-- Driver Seat -->
+                        <div class="seat-row">
+                            <div class="seat driver">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div class="seat-aisle"></div>
+                            <div class="seat-aisle"></div>
+                        </div>
+                        
+                        <!-- Generate seat rows dynamically via JavaScript -->
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <p class="mb-2">
+                            <i class="bi bi-people"></i> 
+                            <span id="availableSeats">{{ trip.available_seats }}</span> seats available
+                        </p>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-info-circle"></i> Select up to 6 seats per booking
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Booking Summary -->
+        <div class="col-lg-4">
+            <div class="trip-info-card">
+                <div class="card shadow">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Booking Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="text-muted small">Selected Seats</label>
+                            <h6 id="selectedSeatsDisplay">No seats selected</h6>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="text-muted small">Number of Passengers</label>
+                            <h4 id="passengerCount">0</h4>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Fare per seat</span>
+                            <span>KES {{ trip.fare|floatformat:0|intcomma }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="fw-bold">Total Amount</span>
+                            <h4 class="text-primary mb-0" id="totalAmount">KES 0</h4>
+                        </div>
+                        
+                        <div id="bookingForm" style="display: none;">
+                            <form method="POST" action="{% url 'create_booking' trip.pk %}" id="bookingSeatForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="selected_seats" id="selectedSeatsInput">
+                                <input type="hidden" name="number_of_seats" id="numSeatsInput">
+                                
+                                <button type="submit" class="btn btn-primary btn-lg w-100" id="proceedBtn">
+                                    <i class="bi bi-arrow-right-circle"></i> Proceed to Book
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div id="selectPrompt" class="text-center text-muted">
+                            <i class="bi bi-cursor"></i>
+                            <p>Select seats to continue</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-light">
+                        <small class="text-muted">
+                            <i class="bi bi-shield-check"></i> Secure booking • Free cancellation up to 2 hours before departure
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Route Stops -->
+                {% if trip.route.stops.all %}
+                <div class="card shadow mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-signpost-2"></i> Route Stops</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <div class="rounded-circle bg-primary text-white" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                            1
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong>{{ trip.route.origin.name }}</strong>
+                                        <div class="small text-muted">{{ trip.departure_time|time:"g:i A" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% for stop in trip.route.stops.all %}
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <div class="rounded-circle bg-secondary text-white" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                            {{ forloop.counter|add:1 }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong>{{ stop.location.name }}</strong>
+                                        <div class="small text-muted">+{{ stop.estimated_time }} mins</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <div class="rounded-circle bg-success text-white" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="bi bi-flag-fill"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong>{{ trip.route.destination.name }}</strong>
+                                        <div class="small text-muted">{{ trip.arrival_time|time:"g:i A"|default:"Arrival time" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const farePerSeat = {{ trip.fare }};
+const occupiedSeats = {{ occupied_seats|safe }};
+const maxSeats = 6;
+let selectedSeats = [];
+
+// Generate seat map
+function generateSeatMap() {
+    const seatMap = document.getElementById('seatMap');
+    const totalSeats = {{ trip.vehicle.capacity }};
+    const seatsPerRow = 4; // 2 + aisle + 2
+    const rows = Math.ceil(totalSeats / seatsPerRow);
+    
+    let seatNumber = 1;
+    
+    for (let row = 0; row < rows; row++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'seat-row';
+        
+        for (let col = 0; col < seatsPerRow; col++) {
+            if (col === 2) {
+                // Aisle
+                const aisle = document.createElement('div');
+                aisle.className = 'seat-aisle';
+                rowDiv.appendChild(aisle);
+            } else {
+                if (seatNumber <= totalSeats) {
+                    const seat = document.createElement('div');
+                    seat.className = 'seat';
+                    seat.dataset.seat = seatNumber;
+                    seat.textContent = seatNumber;
+                    
+                    if (occupiedSeats.includes(seatNumber.toString())) {
+                        seat.classList.add('occupied');
+                    } else {
+                        seat.classList.add('available');
+                        seat.addEventListener('click', () => toggleSeat(seatNumber));
+                    }
+                    
+                    rowDiv.appendChild(seat);
+                    seatNumber++;
+                }
+            }
+        }
+        
+        seatMap.appendChild(rowDiv);
+    }
+}
+
+function toggleSeat(seatNum) {
+    const index = selectedSeats.indexOf(seatNum);
+    
+    if (index > -1) {
+        // Deselect
+        selectedSeats.splice(index, 1);
+        document.querySelector(`[data-seat="${seatNum}"]`).classList.remove('selected');
+        document.querySelector(`[data-seat="${seatNum}"]`).classList.add('available');
+    } else {
+        // Select
+        if (selectedSeats.length >= maxSeats) {
+            alert(`You can only select up to ${maxSeats} seats per booking`);
+            return;
+        }
+        selectedSeats.push(seatNum);
+        document.querySelector(`[data-seat="${seatNum}"]`).classList.remove('available');
+        document.querySelector(`[data-seat="${seatNum}"]`).classList.add('selected');
+    }
+    
+    updateSummary();
+}
+
+function updateSummary() {
+    const count = selectedSeats.length;
+    const total = count * farePerSeat;
+    
+    document.getElementById('passengerCount').textContent = count;
+    document.getElementById('totalAmount').textContent = 'KES ' + total.toLocaleString();
+    
+    if (count > 0) {
+        document.getElementById('selectedSeatsDisplay').textContent = selectedSeats.sort((a,b) => a-b).join(', ');
+        document.getElementById('bookingForm').style.display = 'block';
+        document.getElementById('selectPrompt').style.display = 'none';
+        document.getElementById('selectedSeatsInput').value = JSON.stringify(selectedSeats);
+        document.getElementById('numSeatsInput').value = count;
+    } else {
+        document.getElementById('selectedSeatsDisplay').textContent = 'No seats selected';
+        document.getElementById('bookingForm').style.display = 'none';
+        document.getElementById('selectPrompt').style.display = 'block';
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', generateSeatMap);
+</script>
+{% endblock %}

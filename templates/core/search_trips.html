@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Search Trips - MatatuBook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .trip-card {
+        transition: all 0.3s;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .trip-card:hover {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    
+    .filter-sidebar {
+        position: sticky;
+        top: 80px;
+    }
+    
+    .amenity-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .price-tag {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-light py-4">
+    <div class="container">
+        <h2 class="mb-4"><i class="bi bi-search"></i> Search for Trips</h2>
+        
+        <!-- Search Form -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form method="GET" action="{% url 'search_trips' %}">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">From</label>
+                            <select name="origin" class="form-select" required>
+                                <option value="">Select origin...</option>
+                                {% for location in locations %}
+                                <option value="{{ location.id }}" {% if request.GET.origin == location.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ location.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">To</label>
+                            <select name="destination" class="form-select" required>
+                                <option value="">Select destination...</option>
+                                {% for location in locations %}
+                                <option value="{{ location.id }}" {% if request.GET.destination == location.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ location.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Travel Date</label>
+                            <input type="date" name="travel_date" class="form-control" 
+                                   value="{{ request.GET.travel_date }}" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Passengers</label>
+                            <input type="number" name="passengers" class="form-control" 
+                                   value="{{ request.GET.passengers|default:1 }}" min="1" max="6">
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if trips %}
+        <div class="row">
+            <!-- Filters Sidebar -->
+            <div class="col-md-3">
+                <div class="filter-sidebar">
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="bi bi-funnel"></i> Filters</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Price Range</label>
+                                <input type="range" class="form-range" id="priceFilter" min="0" max="5000" step="100">
+                                <div class="d-flex justify-content-between">
+                                    <small>KES 0</small>
+                                    <small id="priceValue">KES 5000</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Departure Time</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="morning">
+                                    <label class="form-check-label" for="morning">
+                                        Morning (6am - 12pm)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="afternoon">
+                                    <label class="form-check-label" for="afternoon">
+                                        Afternoon (12pm - 6pm)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="evening">
+                                    <label class="form-check-label" for="evening">
+                                        Evening (6pm - 12am)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Amenities</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="wifi">
+                                    <label class="form-check-label" for="wifi">WiFi</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="ac">
+                                    <label class="form-check-label" for="ac">Air Conditioning</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="charging">
+                                    <label class="form-check-label" for="charging">Charging Ports</label>
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearFilters()">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trip Results -->
+            <div class="col-md-9">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>{{ trips.count }} Trip{{ trips.count|pluralize }} Found</h5>
+                    <select class="form-select w-auto" id="sortBy">
+                        <option value="time">Sort by Time</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                        <option value="rating">Rating</option>
+                    </select>
+                </div>
+
+                <div id="tripResults">
+                    {% for trip in trips %}
+                    <div class="card trip-card mb-3 shadow-sm" 
+                         data-price="{{ trip.fare }}" 
+                         data-time="{{ trip.departure_time|time:'H' }}"
+                         data-wifi="{{ trip.vehicle.has_wifi|yesno:'1,0' }}"
+                         data-ac="{{ trip.vehicle.has_ac|yesno:'1,0' }}"
+                         data-charging="{{ trip.vehicle.has_charging_ports|yesno:'1,0' }}">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h5 class="mb-1">{{ trip.sacco.name }}</h5>
+                                            <div class="text-muted small">
+                                                <i class="bi bi-bus-front"></i> {{ trip.vehicle.registration_number }} - 
+                                                {{ trip.vehicle.get_vehicle_type_display }}
+                                            </div>
+                                        </div>
+                                        {% if trip.is_express %}
+                                        <span class="badge bg-danger">Express</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="row g-3 mt-2">
+                                        <div class="col-md-4">
+                                            <div class="text-center">
+                                                <div class="fw-bold">{{ trip.departure_time|time:"g:i A" }}</div>
+                                                <small class="text-muted">{{ trip.route.origin.name }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-center">
+                                                <i class="bi bi-arrow-right text-primary"></i>
+                                                <div><small class="text-muted">{{ trip.route.estimated_duration }} mins</small></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-center">
+                                                <div class="fw-bold">{{ trip.arrival_time|time:"g:i A"|default:"--" }}</div>
+                                                <small class="text-muted">{{ trip.route.destination.name }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3">
+                                        {% if trip.vehicle.has_wifi %}
+                                        <span class="badge bg-info amenity-badge me-1"><i class="bi bi-wifi"></i> WiFi</span>
+                                        {% endif %}
+                                        {% if trip.vehicle.has_ac %}
+                                        <span class="badge bg-success amenity-badge me-1"><i class="bi bi-snow"></i> AC</span>
+                                        {% endif %}
+                                        {% if trip.vehicle.has_charging_ports %}
+                                        <span class="badge bg-warning amenity-badge me-1"><i class="bi bi-plug"></i> Charging</span>
+                                        {% endif %}
+                                        <span class="badge bg-secondary amenity-badge">
+                                            <i class="bi bi-people"></i> {{ trip.available_seats }} seats available
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 text-end">
+                                    <div class="price-tag mb-2">KES {{ trip.fare|floatformat:0|intcomma }}</div>
+                                    <div class="mb-2">
+                                        <span class="rating-stars">
+                                            {% for i in "12345" %}
+                                            {% if forloop.counter <= trip.sacco.rating|floatformat:0 %}
+                                            <i class="bi bi-star-fill"></i>
+                                            {% else %}
+                                            <i class="bi bi-star"></i>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </span>
+                                        <small class="text-muted">({{ trip.sacco.total_reviews }})</small>
+                                    </div>
+                                    {% if trip.can_book %}
+                                    <a href="{% url 'trip_detail' trip.pk %}" class="btn btn-primary w-100">
+                                        <i class="bi bi-ticket-perforated"></i> Select Seats
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-secondary w-100" disabled>Not Available</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div id="noResults" class="text-center py-5" style="display: none;">
+                    <i class="bi bi-search display-1 text-muted"></i>
+                    <h4 class="mt-3">No trips match your filters</h4>
+                    <p class="text-muted">Try adjusting your filters</p>
+                </div>
+            </div>
+        </div>
+        {% elif request.GET %}
+        <div class="text-center py-5">
+            <i class="bi bi-bus-front display-1 text-muted"></i>
+            <h3 class="mt-3">No Trips Found</h3>
+            <p class="text-muted">No trips available for the selected route and date. Try different search criteria.</p>
+            <a href="{% url 'search_trips' %}" class="btn btn-primary">
+                <i class="bi bi-arrow-left"></i> New Search
+            </a>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-search display-1 text-primary"></i>
+            <h3 class="mt-3">Start Your Search</h3>
+            <p class="text-muted">Enter your travel details above to find available trips</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Filter functionality
+document.getElementById('priceFilter')?.addEventListener('input', function(e) {
+    document.getElementById('priceValue').textContent = 'KES ' + e.target.value;
+    applyFilters();
+});
+
+document.querySelectorAll('.form-check-input').forEach(checkbox => {
+    checkbox.addEventListener('change', applyFilters);
+});
+
+function applyFilters() {
+    const maxPrice = parseInt(document.getElementById('priceFilter')?.value || 99999);
+    const morning = document.getElementById('morning')?.checked;
+    const afternoon = document.getElementById('afternoon')?.checked;
+    const evening = document.getElementById('evening')?.checked;
+    const wifi = document.getElementById('wifi')?.checked;
+    const ac = document.getElementById('ac')?.checked;
+    const charging = document.getElementById('charging')?.checked;
+    
+    const trips = document.querySelectorAll('.trip-card');
+    let visibleCount = 0;
+    
+    trips.forEach(trip => {
+        const price = parseInt(trip.dataset.price);
+        const time = parseInt(trip.dataset.time);
+        const hasWifi = trip.dataset.wifi === '1';
+        const hasAc = trip.dataset.ac === '1';
+        const hasCharging = trip.dataset.charging === '1';
+        
+        let show = true;
+        
+        // Price filter
+        if (price > maxPrice) show = false;
+        
+        // Time filter
+        if ((morning || afternoon || evening)) {
+            const timeMatch = (morning && time >= 6 && time < 12) ||
+                            (afternoon && time >= 12 && time < 18) ||
+                            (evening && time >= 18);
+            if (!timeMatch) show = false;
+        }
+        
+        // Amenities filter
+        if (wifi && !hasWifi) show = false;
+        if (ac && !hasAc) show = false;
+        if (charging && !hasCharging) show = false;
+        
+        trip.style.display = show ? 'block' : 'none';
+        if (show) visibleCount++;
+    });
+    
+    document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+}
+
+function clearFilters() {
+    document.getElementById('priceFilter').value = 5000;
+    document.getElementById('priceValue').textContent = 'KES 5000';
+    document.querySelectorAll('.form-check-input').forEach(cb => cb.checked = false);
+    applyFilters();
+}
+
+// Sort functionality
+document.getElementById('sortBy')?.addEventListener('change', function(e) {
+    const trips = Array.from(document.querySelectorAll('.trip-card'));
+    const container = document.getElementById('tripResults');
+    
+    trips.sort((a, b) => {
+        switch(e.target.value) {
+            case 'price-low':
+                return parseInt(a.dataset.price) - parseInt(b.dataset.price);
+            case 'price-high':
+                return parseInt(b.dataset.price) - parseInt(a.dataset.price);
+            case 'time':
+                return parseInt(a.dataset.time) - parseInt(b.dataset.time);
+            default:
+                return 0;
+        }
+    });
+    
+    trips.forEach(trip => container.appendChild(trip));
+});
+</script>
+{% endblock %}

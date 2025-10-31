@@ -512,3 +512,37 @@ def verify_promotion(request):
             'valid': False,
             'message': 'Invalid promotion code.'
         })
+
+@login_required
+@require_POST
+def submit_review(request, booking_id):
+    """Submit review for a completed booking"""
+    booking = get_object_or_404(Booking, pk=booking_id, customer=request.user)
+    
+    if booking.status != 'completed':
+        messages.error(request, 'You can only review completed trips.')
+        return redirect('my_bookings')
+    
+    if hasattr(booking, 'review'):
+        messages.info(request, 'You have already reviewed this trip.')
+        return redirect('my_bookings')
+    
+    overall_rating = int(request.POST.get('overall_rating'))
+    comment = request.POST.get('comment', '')
+    
+    Review.objects.create(
+        booking=booking,
+        customer=request.user,
+        trip=booking.trip,
+        sacco=booking.trip.sacco,
+        driver=booking.trip.driver,
+        overall_rating=overall_rating,
+        punctuality_rating=overall_rating,
+        cleanliness_rating=overall_rating,
+        comfort_rating=overall_rating,
+        service_rating=overall_rating,
+        comment=comment
+    )
+    
+    messages.success(request, 'Thank you for your review!')
+    return redirect('my_bookings')

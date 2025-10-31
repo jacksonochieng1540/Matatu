@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}My Dashboard - MatatuBook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        border-left: 4px solid var(--primary-color);
+        transition: all 0.3s;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+    }
+    
+    .booking-status-chip {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-1">Welcome back, {{ user.first_name|default:user.username }}! 👋</h2>
+            <p class="text-muted">Here's what's happening with your trips</p>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card shadow-sm">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1 opacity-75">Upcoming Trips</h6>
+                        <h2 class="mb-0">{{ upcoming_bookings.count }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1 opacity-75">Completed Trips</h6>
+                        <h2 class="mb-0">{{ past_bookings.count }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card shadow-sm" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1 opacity-75">Total Spent</h6>
+                        <h2 class="mb-0">KES 0</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card shadow-sm" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1 opacity-75">Loyalty Points</h6>
+                        <h2 class="mb-0">0</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <a href="{% url 'search_trips' %}" class="btn btn-primary w-100 btn-lg">
+                <i class="bi bi-search"></i> Search Trips
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'my_bookings' %}" class="btn btn-outline-primary w-100 btn-lg">
+                <i class="bi bi-ticket-perforated"></i> My Bookings
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'profile' %}" class="btn btn-outline-primary w-100 btn-lg">
+                <i class="bi bi-person"></i> My Profile
+            </a>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-outline-primary w-100 btn-lg">
+                <i class="bi bi-headset"></i> Support
+            </button>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Upcoming Trips -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Upcoming Trips</h5>
+                    <a href="{% url 'my_bookings' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_bookings %}
+                        {% for booking in upcoming_bookings %}
+                        <div class="dashboard-card card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <h6 class="mb-0">{{ booking.trip.route.name }}</h6>
+                                            {% if booking.status == 'confirmed' %}
+                                            <span class="booking-status-chip bg-success text-white">Confirmed</span>
+                                            {% elif booking.status == 'pending' %}
+                                            <span class="booking-status-chip bg-warning text-dark">Pending</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-muted mb-2">{{ booking.trip.sacco.name }}</p>
+                                        <div class="row g-2 small">
+                                            <div class="col-auto">
+                                                <i class="bi bi-calendar"></i> {{ booking.trip.departure_date|date:"M d, Y" }}
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="bi bi-clock"></i> {{ booking.trip.departure_time|time:"g:i A" }}
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="bi bi-people"></i> {{ booking.number_of_seats }} seat{{ booking.number_of_seats|pluralize }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="mb-2">
+                                            <h5 class="text-primary mb-0">KES {{ booking.total_fare|floatformat:0|intcomma }}</h5>
+                                        </div>
+                                        <a href="{% url 'booking_detail' booking.pk %}" class="btn btn-sm btn-primary">
+                                            View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x display-1 text-muted"></i>
+                        <h5 class="mt-3">No Upcoming Trips</h5>
+                        <p class="text-muted">You don't have any trips booked yet</p>
+                        <a href="{% url 'search_trips' %}" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Search for Trips
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Recent Trips -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Trips</h5>
+                </div>
+                <div class="card-body">
+                    {% if past_bookings %}
+                    <div class="list-group list-group-flush">
+                        {% for booking in past_bookings %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ booking.trip.route.name }}</h6>
+                                    <small class="text-muted">
+                                        {{ booking.trip.departure_date|date:"M d, Y" }} • {{ booking.trip.sacco.name }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="mb-1">KES {{ booking.total_fare|floatformat:0|intcomma }}</div>
+                                    {% if not booking.review %}
+                                    <button class="btn btn-sm btn-outline-primary">Rate Trip</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">No completed trips yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" 
+                             class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                        {% else %}
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                             style="width: 100px; height: 100px; font-size: 40px;">
+                            {{ user.first_name.0|default:user.username.0 }}{{ user.last_name.0|default:"" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h5 class="mb-1">{{ user.get_full_name|default:user.username }}</h5>
+                    <p class="text-muted mb-2">{{ user.email }}</p>
+                    <p class="text-muted mb-3">{{ user.phone_number }}</p>
+                    <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil"></i> Edit Profile
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Promotional Banner -->
+            <div class="card shadow-sm mb-4 border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-body">
+                    <h5 class="mb-2"><i class="bi bi-gift"></i> Special Offer!</h5>
+                    <p class="mb-3">Get 20% off on your next booking. Use code: <strong>TRAVEL20</strong></p>
+                    <a href="{% url 'search_trips' %}" class="btn btn-light btn-sm">
+                        Book Now <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Travel Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span><i class="bi bi-geo-alt text-primary"></i> Routes Traveled</span>
+                        <strong>0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span><i class="bi bi-bus-front text-success"></i> SACCOs Used</span>
+                        <strong>0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span><i class="bi bi-award text-warning"></i> Member Since</span>
+                        <strong>{{ user.date_joined|date:"M Y" }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
