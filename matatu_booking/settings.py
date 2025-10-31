@@ -183,25 +183,25 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Africa/Nairobi'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+#
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files
+
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Crispy Forms
+
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
@@ -243,7 +243,7 @@ AT_CONFIG = {
     'SENDER_ID': env('AT_SENDER_ID'),
 }
 
-# Login/Logout URLs
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
@@ -258,7 +258,7 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
 
 # Custom Settings
-BOOKING_CANCELLATION_HOURS = 2  # Hours before departure
-SEAT_HOLD_DURATION = 10  # Minutes to complete payment
+BOOKING_CANCELLATION_HOURS = 2  
+SEAT_HOLD_DURATION = 10 
 MAX_SEATS_PER_BOOKING = 6
-MINIMUM_BOOKING_TIME = 30  # Minutes before departure
+MINIMUM_BOOKING_TIME = 30  
