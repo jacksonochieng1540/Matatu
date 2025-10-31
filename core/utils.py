@@ -1,5 +1,3 @@
-# core/utils.py
-
 import requests
 import base64
 import json
@@ -15,12 +13,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# ============================================
-# M-Pesa Integration
-# ============================================
-
 def get_mpesa_access_token():
-    """Get M-Pesa access token"""
     try:
         api_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
         if settings.MPESA_CONFIG['ENVIRONMENT'] == 'production':
@@ -46,7 +39,6 @@ def get_mpesa_access_token():
 
 
 def initiate_mpesa_payment(booking, phone_number):
-    """Initiate M-Pesa STK Push"""
     try:
         access_token = get_mpesa_access_token()
         if not access_token:
@@ -113,7 +105,6 @@ def initiate_mpesa_payment(booking, phone_number):
 
 
 def query_mpesa_transaction(checkout_request_id):
-    """Query M-Pesa transaction status"""
     try:
         access_token = get_mpesa_access_token()
         if not access_token:
@@ -151,7 +142,6 @@ def query_mpesa_transaction(checkout_request_id):
 
 
 def process_mpesa_callback(callback_data):
-    """Process M-Pesa callback data"""
     try:
         result_code = callback_data.get('Body', {}).get('stkCallback', {}).get('ResultCode')
         checkout_request_id = callback_data.get('Body', {}).get('stkCallback', {}).get('CheckoutRequestID')
@@ -225,10 +215,6 @@ def process_mpesa_callback(callback_data):
         return {'success': False, 'message': str(e)}
 
 
-# ============================================
-# SMS Functions (Africa's Talking)
-# ============================================
-
 def send_sms(phone_number, message):
     """Send SMS via Africa's Talking"""
     try:
@@ -272,10 +258,6 @@ def send_sms(phone_number, message):
         return False
 
 
-# ============================================
-# Email Functions
-# ============================================
-
 def send_email_notification(subject, recipient, template_name, context):
     """Send email notification"""
     try:
@@ -315,12 +297,9 @@ def send_email_notification(subject, recipient, template_name, context):
         return False
 
 
-# ============================================
-# QR Code Generation
-# ============================================
 
 def generate_booking_qr_code(booking):
-    """Generate QR code for booking"""
+   #Generate QR code for booking
     try:
         qr = qrcode.QRCode(
             version=1,
@@ -353,14 +332,10 @@ def generate_booking_qr_code(booking):
         return False
 
 
-# ============================================
-# Notification Functions
-# ============================================
 
 def send_booking_confirmation(booking):
-    """Send booking confirmation via SMS and email"""
+  #Send booking confirmation via SMS and email
     try:
-        # SMS
         sms_message = (
             f"Booking confirmed! Ref: {booking.booking_reference}\n"
             f"Trip: {booking.trip.route.name}\n"
@@ -421,18 +396,14 @@ def send_trip_reminder(booking):
         return False
 
 
-# ============================================
-# Utility Functions
-# ============================================
-
 def generate_verification_code():
-    """Generate 6-digit verification code"""
+    #Generate 6-digit verification code
     import random
     return ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
 
 def format_phone_number(phone):
-    """Format phone number to Kenya standard"""
+    #Format phone number to Kenya standard
     phone = str(phone).strip()
     if phone.startswith('0'):
         return '+254' + phone[1:]
@@ -445,7 +416,7 @@ def format_phone_number(phone):
 
 
 def calculate_refund_amount(booking):
-    """Calculate refund amount based on cancellation time"""
+    #Calculate refund amount based on cancellation time
     from django.utils import timezone
     
     now = timezone.now()
@@ -456,13 +427,13 @@ def calculate_refund_amount(booking):
     hours_remaining = (departure - now).total_seconds() / 3600
     
     if hours_remaining >= 24:
-        return booking.total_fare * 0.9  # 90% refund
+        return booking.total_fare * 0.9  
     elif hours_remaining >= 12:
-        return booking.total_fare * 0.7  # 70% refund
+        return booking.total_fare * 0.7  
     elif hours_remaining >= 2:
-        return booking.total_fare * 0.5  # 50% refund
+        return booking.total_fare * 0.5  
     else:
-        return 0  # No refund
+        return 0 
 
 
 def get_available_seats(trip):
@@ -477,12 +448,9 @@ def get_available_seats(trip):
     available = trip.vehicle.seats.exclude(id__in=occupied)
     return available
 
-# ============================================
-# QR Code Generation
-# ============================================
 
 def generate_qr_code(data, filename=None):
-    """Generate QR code from data and return BytesIO object"""
+    #Generate QR code from data and return BytesIO object
     try:
         qr = qrcode.QRCode(
             version=1,
@@ -507,7 +475,7 @@ def generate_qr_code(data, filename=None):
         return None
 
 def generate_booking_qr_code(booking):
-    """Generate QR code for booking and save to model"""
+    #Generate QR code for booking and save to model
     try:
         qr_data = f"BOOKING:{booking.booking_reference}|TRIP:{booking.trip.id}|SEATS:{booking.number_of_seats}"
         buffer = generate_qr_code(qr_data)
