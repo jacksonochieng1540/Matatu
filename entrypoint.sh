@@ -41,5 +41,17 @@ else:
 END
 fi
 
+# FIX: Use explicit commands based on service
 echo "Starting application..."
-exec "$@"
+
+# Check if we're running a specific command, otherwise default to gunicorn
+if [ "$#" -gt 0 ]; then
+    # If arguments are passed, execute them
+    echo "Executing custom command: $@"
+    exec "$@"
+else
+    # Default command for web service
+    echo "Starting Gunicorn server..."
+    exec gunicorn matatu_booking.wsgi:application --bind 0.0.0.0:8000 --workers 3
+
+fi

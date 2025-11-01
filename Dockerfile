@@ -37,11 +37,14 @@ COPY . /app/
 # Create directories for static and media files
 RUN mkdir -p /app/staticfiles /app/media
 
-# Copy entrypoint script
-COPY ./docker/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# ✅ Copy entrypoint script (now from root)
+COPY ./entrypoint.sh /app/entrypoint.sh
 
-# Create non-root user
+# ✅ Ensure correct permissions BEFORE switching user
+RUN chmod +x /app/entrypoint.sh && \
+    chown -R root:root /app
+
+# ✅ Create non-root user (security best practice)
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
@@ -51,5 +54,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Run entrypoint script
-ENTRYPOINT ["/app/entrypoint.sh"]
+# ✅ Use bash explicitly to avoid "permission denied" if shebang fails
+ENTRYPOINT ["bash", "/app/entrypoint.sh"]
