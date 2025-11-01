@@ -53,7 +53,7 @@ pyOpenSSL==25.3.0
 pyphen==0.17.2
 python-crontab==3.3.0
 python-dateutil==2.9.0.post0
-python-mpesa==0.1.10
+#python-mpesa==0.1.10
 qrcode==8.2
 redis==7.0.1
 reportlab==4.4.4
