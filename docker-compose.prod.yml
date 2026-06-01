@@ -108,8 +108,7 @@ services:
       - matatu_network
     restart: always
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-
-  # Certbot for SSL certificates
+    
   certbot:
     image: certbot/certbot
     container_name: matatu_certbot
